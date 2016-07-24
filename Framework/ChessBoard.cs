@@ -178,6 +178,17 @@ namespace Framework
             }
         }
 
+        public ChessPiece this[int row, char column]
+        {
+            get
+            {
+                int start = row*10 + 21;
+                start += 'a' - column;
+
+                return _boardState[start];
+            }
+        }
+
         //TODO: new ChessBoard(move) ignores castle state
 
         private IEnumerable<int> AllPieces(ChessColor color)
@@ -666,8 +677,7 @@ namespace Framework
 
 
             sb.Append(_nextMove == ChessColor.Black ? 'b' : 'w');
-            sb.Append(' ');
-            sb.Append(_epSquare != 0 ? AlgebraicNotation[_epSquare] : "-");
+            
             sb.Append(' ');
 
             if (wKingSide | bKingSide | wQueenSide | bQueenSide)
@@ -682,6 +692,8 @@ namespace Framework
                 sb.Append('-');
             }
 
+            sb.Append(' ');
+            sb.Append(_epSquare != 0 ? AlgebraicNotation[_epSquare] : "-");
             sb.Append(' ');
             sb.Append(_halfMoveActionCounter);
             sb.Append(' ');
