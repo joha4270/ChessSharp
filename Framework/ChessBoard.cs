@@ -26,15 +26,23 @@ namespace Framework
         private IReadOnlyList<ChessMove> _validMoves;
         private readonly int _whiteKing;
         private readonly int _blackKing;
+        private long _zobristHash = 0;
+
 
         public IReadOnlyList<ChessMove> ValidMoves
             => _validMoves ?? (_validMoves = GenerateValidMoves().ToList().AsReadOnly());
 
-        private void SetPoints(ChessPiece[] board, ChessPiece value, params int[] points)
+        private static long[] _zobristTable;
+        private const int _zobristBlackIndex = 12*64;
+        private const int _zobristCastleIndex = _zobristBlackIndex + 1;
+        private const int _zobristEpIndex = _zobristCastleIndex + 4;
+        static ChessBoard()
         {
-            foreach (int t in points)
+            Random r = new Random(302499); //Seed needs to be constant. Otherwise hash changes from run to run. Makes saving just hash impossible. Not sure if number is good
+            _zobristTable = new long[12 * 64 + 1 +  4 + 8]; //12 pieces on 64 squares, 1 side to move, 4 castling rights 8 en passant
+            for (int i = 0; i < _zobristTable.Length; i++)
             {
-                board[t] = value;
+                _zobristTable[i] = r.NextLong();
             }
         }
 
@@ -65,25 +73,6 @@ namespace Framework
                 _boardState[81 + i] |= ChessPiece.Black;
                 _boardState[91 + i] |= ChessPiece.Black;
             }
-        }
-
-        private static ChessPiece[] InitialBoardState()
-        {
-            ChessPiece[] state = new ChessPiece[120];
-
-            for (int i = 0; i < 20; i++)
-            {
-                state[i] = ChessPiece.Invalid;
-                state[119 - i] = ChessPiece.Invalid;
-            }
-
-            for (int i = 0; i < 8; i++)
-            {
-                state[20 + (i*10)] = ChessPiece.Invalid;
-                state[29 + (i*10)] = ChessPiece.Invalid;
-            }
-
-            return state;
         }
 
         private ChessBoard(ChessBoard previousTurn, ChessMove move)
@@ -176,6 +165,33 @@ namespace Framework
                     }
                 }
             }
+        }
+
+        private void SetPoints(ChessPiece[] board, ChessPiece value, params int[] points)
+        {
+            foreach (int t in points)
+            {
+                board[t] = value;
+            }
+        }
+
+        private static ChessPiece[] InitialBoardState()
+        {
+            ChessPiece[] state = new ChessPiece[120];
+
+            for (int i = 0; i < 20; i++)
+            {
+                state[i] = ChessPiece.Invalid;
+                state[119 - i] = ChessPiece.Invalid;
+            }
+
+            for (int i = 0; i < 8; i++)
+            {
+                state[20 + (i*10)] = ChessPiece.Invalid;
+                state[29 + (i*10)] = ChessPiece.Invalid;
+            }
+
+            return state;
         }
 
         public ChessPiece this[int row, char column]
@@ -700,6 +716,46 @@ namespace Framework
             return sb.ToString();
         }
 
+        public long Zobrist64Hash()
+        {
+            if (_zobristHash != 0) return _zobristHash;
+
+            for (int i = 0; i < 64; i++)
+            {
+                int index = Convert64IndexToMailBox(i);
+                ChessPiece p = _boardState[index];
+                if (p != ChessPiece.Empty)
+                {
+                    _zobristHash ^= _zobristTable[i*12 + p.ZobristKey()];
+                }
+            }
+
+            if (_nextMove == ChessColor.Black)
+                _zobristHash ^= _zobristTable[_zobristBlackIndex];
+
+            if (wQueenSide)
+                _zobristHash ^= _zobristTable[_zobristCastleIndex];
+            if (bQueenSide)
+                _zobristHash ^= _zobristTable[_zobristCastleIndex + 1];
+            if (wKingSide)
+                _zobristHash ^= _zobristTable[_zobristCastleIndex + 2];
+            if (bKingSide)
+                _zobristHash ^= _zobristTable[_zobristCastleIndex + 3];
+
+            if (_epSquare != 0)
+            {
+                int epFile = (_epSquare%10) - 1;
+                _zobristHash ^= _zobristTable[_zobristEpIndex + epFile];
+            }
+
+            return _zobristHash;
+        }
+
+        public override int GetHashCode()
+        {
+            return Zobrist64Hash().GetHashCode();
+        }
+
         internal static ChessPiece[] GetInternalState(ChessBoard board)
         {
             ChessPiece[] copystate = new ChessPiece[120];
@@ -804,6 +860,13 @@ namespace Framework
             if(!int.TryParse(fields[5], out fullmove)) throw new ArgumentException("Fullmove field s not a number");
 
             return new ChessBoard(board, color, ep, halfmove, fullmove, wKingSide, wQueenSide,bKingSide, bQueenSide);
+        }
+
+        private static int Convert64IndexToMailBox(int index)
+        {
+            int row = index/8;
+            int column = index%8;
+            return 21 + row*10 + column;
         }
     }
 

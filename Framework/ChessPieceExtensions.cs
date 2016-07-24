@@ -42,6 +42,17 @@
             return ((int)piece & 0x7) - 1;
         }
 
+        internal static int ZobristKey(this ChessPiece piece)
+        {
+            int i = piece.Type();
+            if ((piece & ChessPiece.Black) != 0)
+            {
+                i += 6;
+            }
+
+            return i;
+        }
+
         public static ChessColor OtherColor(this ChessColor color)
         {
             return color == ChessColor.White ? ChessColor.Black : ChessColor.White;
