@@ -28,21 +28,22 @@ namespace Framework
         private readonly int _blackKing;
         private long _zobristHash = 0;
 
+        public static IChessHashTable HashTableImplentation { get; set; } = new DefaultHashTable();
 
         public IReadOnlyList<ChessMove> ValidMoves
-            => _validMoves ?? (_validMoves = GenerateValidMoves().ToList().AsReadOnly());
+            => _validMoves ?? (_validMoves = Array.AsReadOnly(GenerateValidMoves()));
 
-        private static long[] _zobristTable;
-        private const int _zobristBlackIndex = 12*64;
-        private const int _zobristCastleIndex = _zobristBlackIndex + 1;
-        private const int _zobristEpIndex = _zobristCastleIndex + 4;
+        private static readonly long[] ZobristTable;
+        private const int ZobristBlackIndex = 12*64;
+        private const int ZobristCastleIndex = ZobristBlackIndex + 1;
+        private const int ZobristEpIndex = ZobristCastleIndex + 4;
         static ChessBoard()
         {
             Random r = new Random(302499); //Seed needs to be constant. Otherwise hash changes from run to run. Makes saving just hash impossible. Not sure if number is good
-            _zobristTable = new long[12 * 64 + 1 +  4 + 8]; //12 pieces on 64 squares, 1 side to move, 4 castling rights 8 en passant
-            for (int i = 0; i < _zobristTable.Length; i++)
+            ZobristTable = new long[12 * 64 + 1 +  4 + 8]; //12 pieces on 64 squares, 1 side to move, 4 castling rights 8 en passant
+            for (int i = 0; i < ZobristTable.Length; i++)
             {
-                _zobristTable[i] = r.NextLong();
+                ZobristTable[i] = r.NextLong();
             }
         }
 
@@ -236,7 +237,20 @@ namespace Framework
 
         };
 
-        private IEnumerable<ChessMove> GenerateValidMoves()
+        private ChessMove[] GenerateValidMoves()
+        {
+            ChessMove[] ret = HashTableImplentation?.GetHashedMoves(Zobrist64Hash());
+
+            if (ret == null)
+            {
+                ret = GenerateValidMovesInner().ToArray();
+                HashTableImplentation?.SetMoveHash(Zobrist64Hash(), ret);
+            }
+
+            return ret;
+        }
+
+        private IEnumerable<ChessMove> GenerateValidMovesInner()
         {
             Stopwatch sw = Stopwatch.StartNew();
             var v = AllPseudoLegalMoves().ToList();
@@ -726,26 +740,26 @@ namespace Framework
                 ChessPiece p = _boardState[index];
                 if (p != ChessPiece.Empty)
                 {
-                    _zobristHash ^= _zobristTable[i*12 + p.ZobristKey()];
+                    _zobristHash ^= ZobristTable[i*12 + p.ZobristKey()];
                 }
             }
 
             if (_nextMove == ChessColor.Black)
-                _zobristHash ^= _zobristTable[_zobristBlackIndex];
+                _zobristHash ^= ZobristTable[ZobristBlackIndex];
 
             if (wQueenSide)
-                _zobristHash ^= _zobristTable[_zobristCastleIndex];
+                _zobristHash ^= ZobristTable[ZobristCastleIndex];
             if (bQueenSide)
-                _zobristHash ^= _zobristTable[_zobristCastleIndex + 1];
+                _zobristHash ^= ZobristTable[ZobristCastleIndex + 1];
             if (wKingSide)
-                _zobristHash ^= _zobristTable[_zobristCastleIndex + 2];
+                _zobristHash ^= ZobristTable[ZobristCastleIndex + 2];
             if (bKingSide)
-                _zobristHash ^= _zobristTable[_zobristCastleIndex + 3];
+                _zobristHash ^= ZobristTable[ZobristCastleIndex + 3];
 
             if (_epSquare != 0)
             {
                 int epFile = (_epSquare%10) - 1;
-                _zobristHash ^= _zobristTable[_zobristEpIndex + epFile];
+                _zobristHash ^= ZobristTable[ZobristEpIndex + epFile];
             }
 
             return _zobristHash;

@@ -5,9 +5,9 @@ namespace IntegrationTest
 {
     class SelfTest
     {
-        public static Dictionary<string, int> Test(string fen, int depth)
+        public static Dictionary<string, long> Test(string fen, int depth)
         {
-            Dictionary<string, int> result = new Dictionary<string, int>();
+            Dictionary<string, long> result = new Dictionary<string, long>();
 
             ChessBoard board = ChessBoard.ParseFen(fen);
 

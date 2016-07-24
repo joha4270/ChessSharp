@@ -43,17 +43,37 @@ namespace IntegrationTest
                 1, 20, 400, 8902, 197281, 4865609, 119060324, 3195901860, 84998978956, 2439530234167,
                 69352859712417, 2097651003696806, 62854969236701747, 1981066775000396239
             };
+
+            if (ChessBoard.HashTableImplentation == null)
+            {
+                Console.WriteLine("Not using a HashTable");
+            }
+            else
+            {
+                Console.WriteLine("Using {0} as HashTable", ChessBoard.HashTableImplentation.GetType());
+            }
+
             for (int depth = 1;; depth++)
             {
                 Console.WriteLine("Doing Perft for depth {0}", depth);
-                var result = PerformanceUtilities.Perft(depth);
-                int knps = (int) (result.Item2/result.Item1.TotalSeconds) / 1000;
 
-                Console.WriteLine("{0} nodes at depth {1} examined in {2:g}. {3}k Nodes per Second", result.Item2, depth, result.Item1, knps);
+                var result = PerformanceUtilities.Perft(depth);
+                int knps = (int) (result.Item2/result.Item1.TotalSeconds)/1000;
+
+                Console.WriteLine("{0} nodes at depth {1} examined in {2:c}. {3}k Nodes per Second", result.Item2, depth,
+                    result.Item1.ToString(@"m\:ss"), knps);
                 if (perftResult.Length > depth && perftResult[depth] != result.Item2)
                 {
                     Console.WriteLine("ERROR: Expected {0} nodes", perftResult[depth]);
                 }
+                DefaultHashTable hashTable = ChessBoard.HashTableImplentation as DefaultHashTable;
+                if (hashTable != null)
+                {
+                    double ratio = hashTable.Hit/(double) (hashTable.Hit + hashTable.Miss);
+                    Console.WriteLine("Hash table size {0}MB. {1} hits {2} miss ({3})", hashTable.SizeMB, hashTable.Hit,
+                        hashTable.Miss, ratio);
+                }
+
                 Console.WriteLine();
             }
         }
@@ -103,7 +123,7 @@ namespace IntegrationTest
             Console.Read();
         }
 
-        private static List<Tree<string>> Wrong(Dictionary<string, int> own, Dictionary<string, int> expected, string fen, RoceTest roce, int depth)
+        private static List<Tree<string>> Wrong(Dictionary<string, long> own, Dictionary<string, long> expected, string fen, RoceTest roce, int depth)
         {
 
             var extra = own.Where(x => !expected.ContainsKey(x.Key)).Select(x => x.Key).ToList();
@@ -126,7 +146,7 @@ namespace IntegrationTest
             }
             else
             {
-                foreach (KeyValuePair<string, int> pair in own)
+                foreach (KeyValuePair<string, long> pair in own)
                 {
                     if (expected[pair.Key] != pair.Value)
                     {
@@ -153,13 +173,13 @@ namespace IntegrationTest
             return ret;
         }
 
-        private static bool Passing(Dictionary<string, int> result, Dictionary<string, int> expected, int expectedTotal)
+        private static bool Passing(Dictionary<string, long> result, Dictionary<string, long> expected, long expectedTotal)
         {
-            int resultTotal = result.Select(x => x.Value).Aggregate((x, y) => x + y);
+            long resultTotal = result.Select(x => x.Value).Aggregate((x, y) => x + y);
             if (resultTotal != expectedTotal)
                 return false;
 
-            foreach (KeyValuePair<string, int> keyValuePair in result)
+            foreach (KeyValuePair<string, long> keyValuePair in result)
             {
                 if (expected.ContainsKey(keyValuePair.Key))
                 {

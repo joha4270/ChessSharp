@@ -9,12 +9,12 @@ namespace Framework
 {
     public static class PerformanceUtilities
     {
-        public static Tuple<TimeSpan, int> Perft(int depth, ChessBoard board = default(ChessBoard))
+        public static Tuple<TimeSpan, long> Perft(int depth, ChessBoard board = default(ChessBoard))
         {
             return Perft(depth, x => 1, board);
         }
 
-        public static Tuple<TimeSpan, int> Perft(int depth, Func<ChessMove, int> count,
+        public static Tuple<TimeSpan, long> Perft(int depth, Func<ChessMove, int> count,
             ChessBoard board = default(ChessBoard))
         {
             if(board == null)
@@ -22,14 +22,14 @@ namespace Framework
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            int counted = PerftInner(depth, board, count);
+            long counted = PerftInner(depth, board, count);
 
             sw.Stop();
 
-            return new Tuple<TimeSpan, int>(sw.Elapsed, counted);
+            return new Tuple<TimeSpan, long>(sw.Elapsed, counted);
         }
 
-        private static int PerftInner(int depth, ChessBoard board, Func<ChessMove, int> count)
+        private static long PerftInner(int depth, ChessBoard board, Func<ChessMove, int> count)
         {
             if (depth < 1) return 1;
             else if (depth == 1)
@@ -38,7 +38,7 @@ namespace Framework
             }
             else
             {
-                int total = 0;
+                long total = 0;
                 foreach (ChessMove move in board.ValidMoves)
                 {
                     ChessBoard child = board.ExecuteMove(move);

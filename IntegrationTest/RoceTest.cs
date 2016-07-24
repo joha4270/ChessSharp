@@ -78,9 +78,9 @@ namespace IntegrationTest
             _stdin.Flush();
         }
 
-        public Dictionary<string, int> DivideResult()
+        public Dictionary<string, long> DivideResult()
         {
-            Dictionary<string, int> result = new Dictionary<string, int>();
+            Dictionary<string, long> result = new Dictionary<string, long>();
             bool past = false;
             Queue<string> buffer = new Queue<string>();
             while (true)
@@ -107,7 +107,7 @@ namespace IntegrationTest
                     return result;
                 }
 
-                result.Add(parts[0], int.Parse(parts[1]));
+                result.Add(parts[0], long.Parse(parts[1]));
 
             }
         }
