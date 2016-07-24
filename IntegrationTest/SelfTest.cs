@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Framework;
 
@@ -13,16 +14,24 @@ namespace IntegrationTest
 
             foreach (ChessMove move in board.ValidMoves)
             {
-                if (depth == 1)
+                try
                 {
-                    result.Add(move.AlgebraicFrom + move.AlgebraicTo, 1);
+                    if (depth == 1)
+                    {
+                        result.Add(move.AlgebraicFrom + move.AlgebraicTo, 1);
+                    }
+                    else
+                    {
+                        ChessBoard after = board.ExecuteMove(move);
+                        var res = PerformanceUtilities.Perft(depth - 1, after);
+                        result.Add(move.AlgebraicFrom + move.AlgebraicTo, res.Item2);
+                    }
                 }
-                else
+                catch (ArgumentException)
                 {
-                    ChessBoard after = board.ExecuteMove(move);
-                    var res = PerformanceUtilities.Perft(depth - 1, after);
-                    result.Add(move.AlgebraicFrom + move.AlgebraicTo, res.Item2);
+                    throw;
                 }
+                
             }
 
             return result;

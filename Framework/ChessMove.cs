@@ -21,7 +21,7 @@ namespace Framework
 
             
 
-            Castle = (Moved.AsWhite() == ChessPiece.King && Math.Abs(InnerMove.PieceCordinate - InnerMove.HitCordinate) == 2);
+            Castle = (Moved.AsWhite() == ChessPiece.King && Math.Abs(InnerMove.PieceCordinate - InnerMove.HitCordinate) >= 2 && Math.Abs(InnerMove.PieceCordinate - InnerMove.HitCordinate) < 9);
             EnPassant = false;
             Check = check;
             CheckMate = mate;

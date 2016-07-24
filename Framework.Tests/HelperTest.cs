@@ -10,6 +10,7 @@ namespace Framework.Tests
     [TestFixture]
     class HelperTest
     {
+        [Test]
         public void ValidPieces()
         {
             CollectionAssert.AreEqual(new int[]

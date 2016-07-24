@@ -83,11 +83,13 @@ namespace IntegrationTest
             int maxDepth = 10;
             Console.SetWindowSize(120, 25);
             Console.SetBufferSize(120, 300);
+            Console.CursorLeft = 0;
             List<FenTestCase> tests = File.ReadAllLines("perftsuite.epd").Select(x => new FenTestCase(x)).ToList();
             RoceTest roce = new RoceTest();
 
             foreach (FenTestCase testCase in tests)
             {
+                bool wrong = false;
                 Console.Write($"Testing \"{testCase.Fen}\" in depth...");
                 roce.SetBoard(testCase.Fen);
                 for (int i = 0; i < testCase.Perft.Length; i++)
@@ -111,12 +113,16 @@ namespace IntegrationTest
                             Console.WriteLine(tree);
                         }
                         Console.Read();
-                        return;
+                        wrong = true;
+                        break;
                     }
                 }
 
-                Console.WriteLine();
-                Console.WriteLine("Passed");
+                if (wrong == false)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Passed");
+                }
                 Console.WriteLine();
             }
 

@@ -85,6 +85,14 @@ namespace Framework
 
             _moveCounter = previousTurn._moveCounter + (_nextMove == ChessColor.White ? 1 : 0);
 
+            _whiteKing = previousTurn._whiteKing == move.InnerMove.PieceCordinate
+                ? move.InnerMove.HitCordinate
+                : previousTurn._whiteKing;
+
+            _blackKing = previousTurn._blackKing == move.InnerMove.PieceCordinate
+                ? move.InnerMove.HitCordinate
+                : previousTurn._blackKing;
+
             if (move.Capture != ChessPiece.Empty || move.Moved.AsWhite() == ChessPiece.Pawn)
             {
                 _halfMoveActionCounter = 0;
@@ -93,9 +101,6 @@ namespace Framework
             {
                 _halfMoveActionCounter = previousTurn._halfMoveActionCounter + 1;
             }
-
-            _boardState[move.InnerMove.HitCordinate] = _boardState[move.InnerMove.PieceCordinate] |= ChessPiece.Moved;
-            _boardState[move.InnerMove.PieceCordinate] = ChessPiece.Empty;
 
             if (move.EnPassant)
             {
@@ -107,7 +112,7 @@ namespace Framework
                 a += move.InnerMove.HitCordinate%10;
 
                 _boardState[a] = ChessPiece.Empty;
-                
+
             }
 
             if (move.Moved.AsWhite() == ChessPiece.Pawn &&
@@ -118,10 +123,73 @@ namespace Framework
                 _epSquare = (move.InnerMove.PieceCordinate + move.InnerMove.HitCordinate)/2;
             }
 
-            _whiteKing = previousTurn._whiteKing == move.InnerMove.PieceCordinate ? move.InnerMove.HitCordinate : previousTurn._whiteKing;
+            bKingSide = previousTurn.bKingSide;
+            wKingSide = previousTurn.wKingSide;
+            bQueenSide = previousTurn.bQueenSide;
+            wQueenSide = previousTurn.wQueenSide;
+
+            if (previousTurn._whiteKing == 25 && move.InnerMove.PieceCordinate == previousTurn._whiteKing)
+            {
+                wKingSide = false;
+                wQueenSide = false;
+            }
+
+            if (previousTurn._blackKing == 95 && move.InnerMove.PieceCordinate == previousTurn._blackKing)
+            {
+                bKingSide = false;
+                bQueenSide = false;
+            }
+
+            if (move.Castle)
+            {
+                bool kingside = move.InnerMove.HitCordinate > move.InnerMove.PieceCordinate;
+                int rookDest = move.InnerMove.HitCordinate + (kingside ? -1 : 1);
+                int rookFrom = 0;
+                for (int i = 1 + move.Moved.GetColor().OfficerLine(); i < 9 + move.Moved.GetColor().OfficerLine(); i++)
+                {
+                    if (_boardState[i].AsWhite() != ChessPiece.Rook) continue; 
+                    rookFrom = i; //when rook found save it
+                    if (!kingside)  //if we are queenside (not kingside) stop on the first we find, otherwise keep searching for the (maybe) second.
+                        break;
+                }
+                _boardState[rookDest] = _boardState[rookFrom] |= ChessPiece.Moved;
+                _boardState[rookFrom] = ChessPiece.Empty;
+            }
+
+            if (move.Moved.AsWhite() == ChessPiece.Rook && (_boardState[move.InnerMove.PieceCordinate] & ChessPiece.Moved) == 0 &&  (move.InnerMove.PieceCordinate / 10) == (move.Moved.GetColor().OfficerLine() / 10))
+            {
+
+                if (previousTurn._nextMove == ChessColor.Black)
+                {
+                    bool kingSide = _blackKing < move.InnerMove.PieceCordinate;
+                    if (kingSide)
+                    {
+                        bKingSide = false;
+                    }
+                    else
+                    {
+                        bQueenSide = false;
+                    }
+                }
+                else
+                {
+                    bool kingside = _whiteKing < move.InnerMove.PieceCordinate;
+                    if (kingside)
+                    {
+                        wKingSide = false;
+                    }
+                    else
+                    {
+                        wQueenSide = false;
+                    }
+                }
+            }
+
             
-            _blackKing = previousTurn._blackKing == move.InnerMove.PieceCordinate ? move.InnerMove.HitCordinate : previousTurn._blackKing;
-            
+
+            _boardState[move.InnerMove.HitCordinate] = _boardState[move.InnerMove.PieceCordinate] |= ChessPiece.Moved;
+            _boardState[move.InnerMove.PieceCordinate] = ChessPiece.Empty;
+
         }
 
         private ChessBoard(ChessPiece[] board, ChessColor color, int ep, int halfmove, int fullmove, bool wKingSide, bool wQueenSide, bool bKingSide, bool bQueenSide)
@@ -280,12 +348,16 @@ namespace Framework
 
             int kingNewPos = selfKing == move.PieceCordinate ? move.HitCordinate : selfKing;
 
+            bool peasentThreat = IsPeasentThreat(kingNewPos, _nextMove,
+                _boardState[move.PieceCordinate], move.PieceCordinate, move.HitCordinate);
+            bool knightThreat = IsKnightThreat(_boardState, kingNewPos, _nextMove,
+                _boardState[move.PieceCordinate], move.PieceCordinate, move.HitCordinate);
+            bool slideThreat = IsSlideThreat(_boardState, _nextMove, kingNewPos,
+                _boardState[move.PieceCordinate], move.PieceCordinate, move.HitCordinate);
 
-            var legal = !(IsSlideThreat(_boardState, _nextMove, kingNewPos,
-                _boardState[move.PieceCordinate], move.PieceCordinate, move.HitCordinate) ||
-                           IsKnightThreat(_boardState, kingNewPos, _nextMove,
-                               _boardState[move.PieceCordinate], move.PieceCordinate, move.HitCordinate) ||
-                           IsPeasentThreat(kingNewPos, _nextMove));
+            var legal = !(slideThreat ||
+                          knightThreat ||
+                           peasentThreat);
 
             if (!legal)
             {
@@ -611,30 +683,40 @@ namespace Framework
                 if (kingPos != 0 && rookPos != 0) break;
             }
 
-            if (rookPos == 0 || kingPos == 0) return false; //Sanity! Should never happen, but does (don't quite handle castle yet) 
+            if (rookPos == 0 || kingPos == 0)
+                return false; //Sanity! Should never happen, but does (don't quite handle castle yet) 
 
             //Rook don't care about threats, so move rook pos 1 toward king
             //stuff
+            int kingTo;
             if (rookPos > kingPos)
             {
-                rookPos--;
+                kingTo = 7 + officerLine;
             }
             else
             {
-                rookPos++;
+                kingTo = 3 + officerLine;
             }
 
             int min = Math.Min(rookPos, kingPos);
             int max = Math.Max(rookPos, kingPos);
 
+            for (int i = min + 1; i < max; i++)
+            {
+                if (boardState[i] != ChessPiece.Empty)
+                    return false;
+            }
+
+            min = Math.Min(kingTo, kingPos);
+            max = Math.Max(kingTo, kingPos);
+
             for (int i = min; i <= max; i++)
             {
-                if (i != kingPos && boardState[i] != ChessPiece.Empty)
-                    return false;
-
                 if (AnyThreat(i, player))
                     return false;
             }
+
+            
 
             return true;
         }

@@ -11,7 +11,7 @@ namespace Framework.Tests
     [TestFixture]
     class PerftPerformance
     {
-        public static int MaxPerftDepth = 6;
+        public static int MaxPerftDepth = 4;
         [Test]
         [TestCase(0, 1)]
         [TestCase(1, 20)]

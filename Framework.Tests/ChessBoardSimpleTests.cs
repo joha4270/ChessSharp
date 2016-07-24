@@ -116,7 +116,7 @@ namespace Framework.Tests
             ChessMove chessMove = initial.ValidMoves.First(x => x.EnPassant);
             ChessBoard after = initial.ExecuteMove(chessMove);
 
-            Assert.AreEqual("6k1/8/4P3/8/8/8/8/2K5 b - - 3 0", after.ToFen());
+            Assert.AreEqual("6k1/8/4P3/8/8/8/8/2K5 b - - 0 2", after.ToFen());
         }
     }
 }

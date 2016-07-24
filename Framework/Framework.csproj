@@ -50,6 +50,7 @@
     <Compile Include="ChessPieceExtensions.cs" />
     <Compile Include="ChessUtil.cs" />
     <Compile Include="CurrentSearchStatus.cs" />
+    <Compile Include="DefaultHashTable.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IChessBoard.cs" />
     <Compile Include="IChessHashTable.cs" />

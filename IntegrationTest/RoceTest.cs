@@ -82,6 +82,9 @@ namespace IntegrationTest
         {
             Dictionary<string, long> result = new Dictionary<string, long>();
             bool past = false;
+#if DEBUG
+            List<string> history = new List<string>();
+#endif
             Queue<string> buffer = new Queue<string>();
             while (true)
             {
@@ -89,6 +92,10 @@ namespace IntegrationTest
                 if (buffer.Count == 0)
                 {
                     line = _stdout.ReadLine();
+#if DEBUG
+                    history.Add(line);
+#endif
+
                 }
                 else
                 {
@@ -116,7 +123,7 @@ namespace IntegrationTest
 
         private void DebugWrite(string info)
         {
-            return;
+            //return;
             Console.WriteLine(info);
         }
     }

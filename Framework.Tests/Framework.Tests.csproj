@@ -44,11 +44,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CastleTests.cs" />
     <Compile Include="ChessBoardSimpleTests.cs" />
     <Compile Include="ChessBoardTests.cs" />
     <Compile Include="ChessUtilTests.cs" />
     <Compile Include="DictionaryExtensions.cs" />
     <Compile Include="HelperTest.cs" />
+    <Compile Include="IntegrationFoundTest1.cs" />
     <Compile Include="PerftExpectedTests.cs" />
     <Compile Include="PerftPerformance.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
