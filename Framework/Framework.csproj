@@ -44,7 +44,9 @@
     <Compile Include="AbstractChessEngine.cs" />
     <Compile Include="AbstractEngineOption.cs" />
     <Compile Include="ChessBoard.cs" />
+    <Compile Include="ChessColor.cs" />
     <Compile Include="ChessMove.cs" />
+    <Compile Include="ChessPiece.cs" />
     <Compile Include="ChessPieceExtensions.cs" />
     <Compile Include="ChessUtil.cs" />
     <Compile Include="CurrentSearchStatus.cs" />

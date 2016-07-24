@@ -358,8 +358,6 @@ namespace Framework
 
         }
 
-        
-
         private bool AnyThreat(int square, ChessColor defender, int notBlockinganymore = 0)
         {
             bool knightThreat = IsKnightThreat(_boardState, square, defender);
@@ -825,27 +823,5 @@ namespace Framework
             PieceCordinate = pieceCordinate;
             HitCordinate = hitCordinate;
         }
-    }
-
-    [Flags]
-    public enum ChessPiece : byte
-    {
-        Empty = 0,
-        Pawn = 1,
-        Knight = 2,
-        Bishop = 3,
-        Rook = 4,
-        Queen= 5,
-        King = 6,
-        NotUsedPiece = 7,
-        Moved = 8,
-        Black = 128,
-
-        Invalid = 0xFF
-    }
-
-    public enum ChessColor : byte
-    {
-        White = 0, Black = 128
     }
 }
