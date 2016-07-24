@@ -1,221 +1,64 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Framework;
 
 namespace IntegrationTest
 {
-    class FenTestCase
-    {
-        public string Fen { get; }
-        public int[] Perft { get; }
-
-        public FenTestCase(string t)
-        {
-            string[] parts = t.Split(';');
-            Fen = parts[0].Trim();
-
-            Perft = parts.Skip(1).Select(x => int.Parse(x.Split(' ')[1])).ToArray();
-        }
-    }
-
-    class SelfTest
-    {
-        public static Dictionary<string, int> Test(string fen, int depth)
-        {
-            Dictionary<string, int> result = new Dictionary<string, int>();
-
-            ChessBoard board = ChessBoard.ParseFen(fen);
-
-            foreach (ChessMove move in board.ValidMoves)
-            {
-                if (depth == 1)
-                {
-                    result.Add(move.AlgebraicFrom + move.AlgebraicTo, 1);
-                }
-                else
-                {
-                    ChessBoard after = board.ExecuteMove(move);
-                    var res = PerformanceUtilities.Perft(depth - 1, after);
-                    result.Add(move.AlgebraicFrom + move.AlgebraicTo, res.Item2);
-                }
-            }
-
-            return result;
-        }
-    }
-
-    class RoceTest
-    {
-        private readonly Process _process;
-        private StreamReader _stdout;
-        private StreamWriter _stdin;
-        private int _depth;
-
-        public RoceTest()
-        {
-
-            _process = new Process
-            {
-                StartInfo =
-                {
-                    FileName = "roce39.exe",
-                    RedirectStandardInput = true,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false
-                }
-            };
-            _process.Start();
-    
-            _stdout = _process.StandardOutput;
-            _stdin = _process.StandardInput;
-
-            WaitRoce();
-
-        }
-
-        private string WaitRoce()
-        {
-            StringBuilder sb = new StringBuilder();
-            while (true)
-            {
-                int read = _stdout.Read();
-                if(read == -1)
-                { }
-                else
-                {
-                    sb.Append((char) read);
-                    bool state = sb.ToString().EndsWith("roce: "); // & sb[sb.Length -1] == Environment.NewLine.Last();
-                    if (state)
-                    {
-                        DebugWrite(">>>>\"" + sb + "\"");
-                        return sb.ToString();
-                    }
-                }
-            }
-        }
-
-        public void SetBoard(string fen)
-        {
-            
-
-            string a = $"setboard {fen} {_stdin.NewLine}";
-            _stdin.Write(a);
-            //_stdin.Write();
-            DebugWrite(">>>>\"" + a + "\"");
-            _stdin.Flush();
-            string dbg = WaitRoce();
-            
-        }
-
-        public void StartDivide(int depth)
-        {
-            _depth = depth;
-            string b = $"divide {depth}";
-            _stdin.WriteLine(b);
-            DebugWrite(">>>>\"" + b + "\"");
-            _stdin.Flush();
-        }
-
-        public Dictionary<string, int> DivideResult()
-        {
-            Dictionary<string, int> result = new Dictionary<string, int>();
-            bool past = false;
-            Queue<string> buffer = new Queue<string>();
-            while (true)
-            {
-                string line;
-                if (buffer.Count == 0)
-                {
-                    line = _stdout.ReadLine();
-                }
-                else
-                {
-                    line = buffer.Dequeue();
-                }
-                DebugWrite("<<<<\"" + line + "\"");
-
-                string[] parts = line.Split(' ');
-
-                if (line == "") continue;
-
-
-                if (parts[0] == "Moves:"  || parts[0] == "Nodes:")
-                {
-                    WaitRoce();
-                    return result;
-                }
-
-                result.Add(parts[0], int.Parse(parts[1]));
-
-            }
-        }
-
-        
-
-        private void DebugWrite(string info)
-        {
-            return;
-            Console.WriteLine(info);
-        }
-    }
-
-    class Tree<T>
-    {
-        public Tree(T value)
-        {
-            Value = value;
-        }
-
-        public T Value { get; }
-        public List<Tree<T>> Children { get; } = new List<Tree<T>>();
-
-        private void Print(int depth, bool top, StringBuilder sb)
-        {
-            if (!top)
-            {
-                for (int i = 0; i < depth; i++)
-                {
-                    sb.Append(' ');
-                }
-            }
-
-            sb.Append(Value);
-            depth += Value.ToString().Length;
-            if (Children.Count == 0)
-            {
-                sb.Append(Environment.NewLine);
-            }
-            else
-            {
-                sb.Append(" -> ");
-                depth += 4;
-                Children[0].Print(depth, true, sb);
-                for (int i = 1; i < Children.Count; i++)
-                {
-                    Children[i].Print(depth, false, sb);
-                }
-            }
-        }
-
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            Print(0, true, sb);
-
-            return sb.ToString();
-        }
-    }
-
     class Program
     {
         static void Main(string[] args)
+        {
+            string wstring;
+
+            if (args.Length != 0)
+            {
+                wstring = args[0];
+            }
+            else
+            {
+                wstring = Console.ReadLine();
+            }
+            switch (wstring)
+            {
+                default:
+                case "selftest":
+                    TestEngine();
+                    break;
+                case "performance":
+                    TestPerformance();
+                    break;
+            }
+
+        }
+
+        private static void TestPerformance()
+        {
+            long[] perftResult =
+            {
+                1, 20, 400, 8902, 197281, 4865609, 119060324, 3195901860, 84998978956, 2439530234167,
+                69352859712417, 2097651003696806, 62854969236701747, 1981066775000396239
+            };
+            for (int depth = 1;; depth++)
+            {
+                Console.WriteLine("Doing Perft for depth {0}", depth);
+                var result = PerformanceUtilities.Perft(depth);
+                int knps = (int) (result.Item2/result.Item1.TotalSeconds) / 1000;
+
+                Console.WriteLine("{0} nodes at depth {1} examined in {2:g}. {3}k Nodes per Second", result.Item2, depth, result.Item1, knps);
+                if (perftResult.Length > depth && perftResult[depth] != result.Item2)
+                {
+                    Console.WriteLine("ERROR: Expected {0} nodes", perftResult[depth]);
+                }
+                Console.WriteLine();
+            }
+        }
+
+        private static void TestEngine()
         {
             int maxDepth = 10;
             Console.SetWindowSize(120, 25);
@@ -237,11 +80,11 @@ namespace IntegrationTest
 
                     if (Passing(own, res, testCase.Perft[i]))
                     {
-                        Console.Write($" {i+1}");
+                        Console.Write($" {i + 1}");
                     }
                     else
                     {
-                        var errorTree = Wrong(own, res, testCase.Fen, roce, i + 1 );
+                        var errorTree = Wrong(own, res, testCase.Fen, roce, i + 1);
                         Console.WriteLine();
                         foreach (Tree<string> tree in errorTree)
                         {
@@ -250,14 +93,11 @@ namespace IntegrationTest
                         Console.Read();
                         return;
                     }
-
-                    
                 }
 
                 Console.WriteLine();
                 Console.WriteLine("Passed");
                 Console.WriteLine();
-
             }
 
             Console.Read();
