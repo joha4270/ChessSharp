@@ -320,10 +320,8 @@ namespace Framework
 
         private IEnumerable<ChessMove> GenerateValidMovesInner()
         {
-            Stopwatch sw = Stopwatch.StartNew();
-            var v = AllPseudoLegalMoves().ToList();
-            TimeSpan ps = sw.Elapsed;
-            foreach (InnerChessMove move in v)
+            
+            foreach (InnerChessMove move in AllPseudoLegalMoves())
             {
                 bool check, mate;
                 if (IsLegal(move, out check, out mate))
@@ -331,9 +329,6 @@ namespace Framework
                     yield return new ChessMove(_boardState, move, check, mate);
                 }
             }
-
-            sw.Stop();
-            TimeSpan vf = sw.Elapsed;
         }
 
         public static int counter = 0;
@@ -525,20 +520,36 @@ namespace Framework
         private static ChessPiece ChangedBoard(ChessPiece[] board, ChessPiece movedPiece, int @from, int to,
             int hitpoint)
         {
-            ChessPiece hit;
+
+    
             if (hitpoint == @from)
             {
-                hit = ChessPiece.Empty;
+                return ChessPiece.Empty;
             }
             else if (hitpoint == to)
             {
-                hit = movedPiece;
+                return  movedPiece;
             }
             else
             {
-                hit = board[hitpoint];
+                return board[hitpoint];
             }
-            return hit;
+            
+
+            //ChessPiece hit;
+            //if (hitpoint == @from)
+            //{
+            //    hit = ChessPiece.Empty;
+            //}
+            //else if (hitpoint == to)
+            //{
+            //    hit = movedPiece;
+            //}
+            //else
+            //{
+            //    hit = board[hitpoint];
+            //}
+            //return hit;
         }
 
         private bool IsKnightThreat(ChessPiece[] board, int point, ChessColor defender, ChessPiece moved = ChessPiece.Empty, int from = 0, int to = 0)
@@ -974,13 +985,13 @@ namespace Framework
     [DebuggerDisplay("{ChessUtil.AlgebraicNotation[PieceCordinate]} -> {ChessUtil.AlgebraicNotation[HitCordinate]}")]
     internal struct InnerChessMove
     {
-        public int PieceCordinate { get; }
-        public int HitCordinate { get; }
+        public short PieceCordinate { get; }
+        public short HitCordinate { get; }
 
         public InnerChessMove(int pieceCordinate, int hitCordinate)
         {
-            PieceCordinate = pieceCordinate;
-            HitCordinate = hitCordinate;
+            PieceCordinate = (short)pieceCordinate;
+            HitCordinate = (short)hitCordinate;
         }
     }
 }
